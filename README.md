@@ -12,7 +12,7 @@ go get github.com/AndrewVos/pwompt
 
 Add this to your `~/.bashrc` or wherever:
 ```
-export PWOMPT_CONFIG='battery_charging?("white", "⏚")not_battery_charging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "]")git?("white", " ")git_branch("magenta")git_dirty?("red", "*")last_exit_failed?("white", " ")last_exit_code("red")git?("white", " ±")not_git?("white", " $")c("white", " ")'
+export PWOMPT_CONFIG='battery_charging?("white", "⏚")not_battery_charging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")user("magenta")c("white",":")cwd_short("blue")c("yellow", "]")git?("white", " ")git_branch("magenta")git_dirty?("red", "*")last_exit_failed?("white", " ")last_exit_code("red")git?("white", " ±")not_git?("white", " $")c("white", " ")'
 PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt)'
 ```
 

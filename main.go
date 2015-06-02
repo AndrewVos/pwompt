@@ -51,6 +51,9 @@ func main() {
 		Method{Name: "cwd", Result: func(colour string) string {
 			return Colourise(colour, workingDirectory())
 		}},
+		Method{Name: "user", Result: func(colour string) string {
+			return Colourise(colour, User())
+		}},
 		Method{Name: "cwd_short", Result: func(colour string) string {
 			return Colourise(colour, shortWorkingDirectory())
 		}},
