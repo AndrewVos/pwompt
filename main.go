@@ -1,170 +1,89 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"os/user"
-	"path"
 	"regexp"
-	"strconv"
-	"strings"
 )
 
-var shortenPath = true
-var showBattery = true
-
-func init() {
-	flag.BoolVar(&shortenPath, "shorten-path", shortenPath, "shorten the path from \"/some/path/name\" to \"/some/.../name\"")
-	flag.BoolVar(&showBattery, "show-battery", showBattery, "show the battery percentage")
-}
+const (
+	DefaultPwomptConfig = `battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")`
+)
 
 func main() {
-	flag.Parse()
-
-	fmt.Print(battery())
-	fmt.Print(workingDirectory())
-	if isGitRepository() {
-		fmt.Print(gitTip())
-	} else {
-		fmt.Print(tip())
-	}
-}
-
-var batteryChargingMark = "⏚"
-var batteryDischargingMark = "⌁"
-
-func battery() string {
-	if !showBattery {
-		return ""
+	pwomptConfig := os.Getenv("PWOMPT_CONFIG")
+	if pwomptConfig == "" {
+		pwomptConfig = DefaultPwomptConfig
 	}
 
-	output, err := exec.Command("acpi", "--battery").Output()
-	if err != nil {
-		log.Println(err)
-		return ""
-	}
-	battery := string(output)
+	battery := &Battery{}
 
-	percentageRegex := regexp.MustCompile("(\\d+)%")
-	matches := percentageRegex.FindStringSubmatch(battery)
-	percentage, err := strconv.ParseInt(matches[1], 0, 64)
-	if err != nil {
-		log.Println(err)
-		return ""
-	}
+	methodFinder := regexp.MustCompile(`([\w?!]+)\(([^\(\)]*)\)`)
+	argumentFinder := regexp.MustCompile(`"([^"]*)"`)
 
-	p := fmt.Sprintf("%v", percentage) + "%"
-	if percentage < 10 {
-		p = Red(p)
-	} else if percentage < 70 {
-		p = Yellow(p)
-	} else {
-		p = Green(p)
-	}
-
-	if strings.Contains(battery, "Charging") {
-		p = batteryChargingMark + p
-	} else if strings.Contains(battery, "Discharging") {
-		p = batteryDischargingMark + p
-	}
-	return p + " "
-}
-
-func tip() string {
-	if lastExitCode() > 0 {
-		return " " + Red(fmt.Sprintf("%v", lastExitCode())) + " $ "
-	}
-	return " $ "
-}
-
-var gitMark = " ± "
-var gitMarkDirty = "*"
-
-func gitTip() string {
-	output, err := exec.Command("git", "symbolic-ref", "--short", "HEAD").Output()
-	if err != nil {
-		return "(" + err.Error() + ")"
-	}
-	branch := string(output)
-	branch = strings.TrimSpace(branch)
-
-	branch = " " + branch
-	if isGitRepositoryDirty() {
-		branch = Red(branch + gitMarkDirty)
-	}
-	if lastExitCode() > 0 {
-		branch = branch + Red(fmt.Sprintf(" %v", lastExitCode()))
-	}
-	branch = Green(branch) + White(gitMark)
-
-	return branch
-}
-
-func lastExitCode() int {
-	lastExitCode := os.Getenv("PWOMPT_LAST_EXIT_CODE")
-	code, _ := strconv.ParseInt(lastExitCode, 0, 64)
-	return int(code)
-}
-
-func isGitRepository() bool {
-	_, err := os.Stat(".git/config")
-	return err == nil
-}
-
-func isGitRepositoryDirty() bool {
-	cmd := exec.Command("git", "status", "--porcelain")
-	output, err := cmd.Output()
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	lines := strings.Split(string(output), "\n")
-	if len(lines) > 1 {
-		return true
-	}
-
-	return false
-}
-
-func workingDirectory() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = ""
-	}
-
-	usr, err := user.Current()
-	if err == nil {
-		if wd == usr.HomeDir {
-			wd = "~"
-		} else if strings.HasPrefix(wd, usr.HomeDir) {
-			wd = strings.TrimPrefix(wd, usr.HomeDir)
-			wd = "~" + wd
+	groups := methodFinder.FindAllStringSubmatch(pwomptConfig, -1)
+	for _, group := range groups {
+		method := group[1]
+		var arguments []string
+		argumentMatches := argumentFinder.FindAllStringSubmatch(group[2], -1)
+		for _, argumentMatch := range argumentMatches {
+			arguments = append(arguments, argumentMatch[1])
 		}
-	}
-	if shortenPath {
-		parts := strings.Split(wd, "/")
-		if len(parts) > 2 {
-			wd = path.Join(parts[0], "...", parts[len(parts)-1])
+		if method == "c" {
+			fmt.Print(colour(arguments[0], arguments[1]))
+		} else if method == "cwd" {
+			fmt.Print(colour(arguments[0], workingDirectory()))
+		} else if method == "cwd_short" {
+			fmt.Print(colour(arguments[0], shortWorkingDirectory()))
+		} else if method == "battery_charging?" {
+			if battery.isBatteryCharging() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "battery_discharging?" {
+			if !battery.isBatteryCharging() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "battery_percentage" {
+			percentage := battery.percentage()
+			percentageDisplay := fmt.Sprintf("%v", percentage) + "%"
+
+			if percentage < 10 {
+				fmt.Print(colour(arguments[0], percentageDisplay))
+			} else if percentage < 70 {
+				fmt.Print(colour(arguments[1], percentageDisplay))
+			} else {
+				fmt.Print(colour(arguments[2], percentageDisplay))
+			}
+
+		} else if method == "battery?" {
+			if battery.batteryExists() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "git_branch" {
+			if isGitRepository() {
+				fmt.Print(colour(arguments[0], gitBranch()))
+			}
+		} else if method == "git_dirty?" {
+			if isGitRepository() && isGitRepositoryDirty() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "git?" {
+			if isGitRepository() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "not_git?" {
+			if !isGitRepository() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "last_exit_code" {
+			if code := lastExitCode(); code > 0 {
+				fmt.Print(colour(arguments[0], fmt.Sprintf("%v", code)))
+			}
+		} else if method == "last_exit_failed?" {
+			if lastExitCode() > 0 {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
 		}
+
 	}
-
-	wd = Yellow("[" + wd + "]")
-	return wd
-}
-
-func Black(text string) string   { return colour(text, 0) }
-func Red(text string) string     { return colour(text, 1) }
-func Green(text string) string   { return colour(text, 2) }
-func Yellow(text string) string  { return colour(text, 3) }
-func Blue(text string) string    { return colour(text, 4) }
-func Magenta(text string) string { return colour(text, 5) }
-func Cyan(text string) string    { return colour(text, 6) }
-func White(text string) string   { return colour(text, 7) }
-func Default(text string) string { return colour(text, 9) }
-
-func colour(text string, colour int) string {
-	return "\001\x1b[3" + strconv.Itoa(colour) + ";1m\002" + text + "\001\x1b[0m\002"
 }
