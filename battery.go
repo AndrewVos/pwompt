@@ -22,21 +22,21 @@ func (b *Battery) retrieveAcpiOutput() {
 	b.acpiOutput = string(output)
 }
 
-func (b *Battery) batteryExists() bool {
+func (b *Battery) Exists() bool {
 	if b.acpiOutput == "" && b.acpiOutputError == nil {
 		b.retrieveAcpiOutput()
 	}
 	return b.acpiOutputError == nil
 }
 
-func (b *Battery) isBatteryCharging() bool {
+func (b *Battery) Charging() bool {
 	if b.acpiOutput == "" && b.acpiOutputError == nil {
 		b.retrieveAcpiOutput()
 	}
 	return strings.Contains(b.acpiOutput, "Charging")
 }
 
-func (b *Battery) percentage() int {
+func (b *Battery) Percentage() int {
 	if b.acpiOutput == "" && b.acpiOutputError == nil {
 		b.retrieveAcpiOutput()
 	}

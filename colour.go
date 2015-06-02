@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func colour(colour string, s string) string {
+func Colourise(colour string, s string) string {
 	colours := map[string]int{
 		"black":   0,
 		"red":     1,

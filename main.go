@@ -7,8 +7,27 @@ import (
 )
 
 const (
-	DefaultPwomptConfig = `battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")not_git_dirty?("white", " ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")`
+	DefaultPwomptConfig = `battery_charging?("white", "⏚")not_battery_charging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")`
 )
+
+type If struct {
+	Name         string
+	Result       func() bool
+	Precondition func() bool
+}
+
+func (i If) IfName() string {
+	return i.Name + "?"
+}
+
+func (i If) IfNotName() string {
+	return "not_" + i.Name + "?"
+}
+
+type Method struct {
+	Name   string
+	Result func(colour string) string
+}
 
 func main() {
 	pwomptConfig := os.Getenv("PWOMPT_CONFIG")
@@ -21,73 +40,88 @@ func main() {
 	methodFinder := regexp.MustCompile(`([\w?!]+)\(([^\(\)]*)\)`)
 	argumentFinder := regexp.MustCompile(`"([^"]*)"`)
 
+	ifs := []If{
+		If{Name: "git", Result: isGitRepository},
+		If{Name: "git_dirty", Precondition: isGitRepository, Result: isGitRepositoryDirty},
+		If{Name: "last_exit_failed", Result: func() bool { return lastExitCode() > 0 }},
+		If{Name: "battery", Result: battery.Exists},
+		If{Name: "battery_charging", Precondition: battery.Exists, Result: battery.Charging},
+	}
+	methods := []Method{
+		Method{Name: "cwd", Result: func(colour string) string {
+			return Colourise(colour, workingDirectory())
+		}},
+		Method{Name: "cwd_short", Result: func(colour string) string {
+			return Colourise(colour, shortWorkingDirectory())
+		}},
+		Method{Name: "git_branch", Result: func(colour string) string {
+			if isGitRepository() {
+				return Colourise(colour, gitBranch())
+			}
+			return ""
+		}},
+		Method{Name: "last_exit_code", Result: func(colour string) string {
+			if code := lastExitCode(); code > 0 {
+				return Colourise(colour, fmt.Sprintf("%v", code))
+			}
+			return ""
+		}},
+	}
+
+	execute := func(methodName string, arguments []string) bool {
+		for _, i := range ifs {
+			if methodName == i.IfName() || methodName == i.IfNotName() {
+				if i.Precondition == nil || i.Precondition() {
+					result := i.Result()
+					if methodName == i.IfName() {
+						if result {
+							fmt.Print(Colourise(arguments[0], arguments[1]))
+						}
+						return true
+					} else {
+						if !result {
+							fmt.Print(Colourise(arguments[0], arguments[1]))
+						}
+						return true
+					}
+				}
+			}
+		}
+		for _, m := range methods {
+			if methodName == m.Name {
+				fmt.Print(m.Result(arguments[0]))
+				return true
+			}
+		}
+		return false
+	}
+
 	groups := methodFinder.FindAllStringSubmatch(pwomptConfig, -1)
 	for _, group := range groups {
-		method := group[1]
+		methodName := group[1]
 		var arguments []string
 		argumentMatches := argumentFinder.FindAllStringSubmatch(group[2], -1)
 		for _, argumentMatch := range argumentMatches {
 			arguments = append(arguments, argumentMatch[1])
 		}
-		if method == "c" {
-			fmt.Print(colour(arguments[0], arguments[1]))
-		} else if method == "cwd" {
-			fmt.Print(colour(arguments[0], workingDirectory()))
-		} else if method == "cwd_short" {
-			fmt.Print(colour(arguments[0], shortWorkingDirectory()))
-		} else if method == "battery_charging?" {
-			if battery.isBatteryCharging() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "battery_discharging?" {
-			if !battery.isBatteryCharging() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "battery_percentage" {
-			percentage := battery.percentage()
+
+		if execute(methodName, arguments) {
+			continue
+		}
+
+		if methodName == "c" {
+			fmt.Print(Colourise(arguments[0], arguments[1]))
+		} else if methodName == "battery_percentage" {
+			percentage := battery.Percentage()
 			percentageDisplay := fmt.Sprintf("%v", percentage) + "%"
 
 			if percentage < 10 {
-				fmt.Print(colour(arguments[0], percentageDisplay))
+				fmt.Print(Colourise(arguments[0], percentageDisplay))
 			} else if percentage < 70 {
-				fmt.Print(colour(arguments[1], percentageDisplay))
+				fmt.Print(Colourise(arguments[1], percentageDisplay))
 			} else {
-				fmt.Print(colour(arguments[2], percentageDisplay))
-			}
-
-		} else if method == "battery?" {
-			if battery.batteryExists() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "git_branch" {
-			if isGitRepository() {
-				fmt.Print(colour(arguments[0], gitBranch()))
-			}
-		} else if method == "git_dirty?" {
-			if isGitRepository() && isGitRepositoryDirty() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "not_git_dirty?" {
-			if isGitRepository() && !isGitRepositoryDirty() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "git?" {
-			if isGitRepository() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "not_git?" {
-			if !isGitRepository() {
-				fmt.Print(colour(arguments[0], arguments[1]))
-			}
-		} else if method == "last_exit_code" {
-			if code := lastExitCode(); code > 0 {
-				fmt.Print(colour(arguments[0], fmt.Sprintf("%v", code)))
-			}
-		} else if method == "last_exit_failed?" {
-			if lastExitCode() > 0 {
-				fmt.Print(colour(arguments[0], arguments[1]))
+				fmt.Print(Colourise(arguments[2], percentageDisplay))
 			}
 		}
-
 	}
 }

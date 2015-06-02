@@ -23,6 +23,9 @@ func isGitRepository() bool {
 }
 
 func isGitRepositoryDirty() bool {
+	if !isGitRepository() {
+		return false
+	}
 	cmd := exec.Command("git", "status", "--porcelain")
 	output, err := cmd.Output()
 	if err != nil {

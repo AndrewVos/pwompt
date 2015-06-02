@@ -12,23 +12,53 @@ go get github.com/AndrewVos/pwompt
 
 Add this to your `~/.bashrc` or wherever:
 ```
-export PWOMPT_CONFIG='battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")'
+export PWOMPT_CONFIG='battery_charging?("white", "⏚")not_battery_charging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "]")git?("white", " ")git_branch("magenta")git_dirty?("red", "*")last_exit_failed?("white", " ")last_exit_code("red")git?("white", " ±")not_git?("white", " $")c("white", " ")'
 PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt)'
 ```
 
-## Arguments
+## Methods
+
+These methods, if they return true, write custom text out in a certain colour.
+Each method has an alternative negative version, for example `something?` and `not_something?`.
 
 ```
-PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt)' >> ~/.bashrc
-⌁87% [~/.../pwompt] master* ± 
+# current directory is inside a git repository
+[not_]git?("colour", "text")
 
-PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt -shorten-path=false)' >> ~/.bashrc
-⌁87% [~/gopath/src/github.com/AndrewVos/pwompt] master ± 
+# current directory is inside a dirty git repository
+[not_]git_dirty?("colour", "text")
 
-PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt -show-battery=false)' >> ~/.bashrc
-[~/.../pwompt] master* 130 ± 
+# last command executed had a non-zero exit code
+[not_]last_exit_failed?("colour", "text")
+
+# battery exists and acpi is installed
+[not_]battery?("colour", "text")
+
+# battery is charging
+[not_]battery_charging?("colour", "text")
 ```
 
+These commands output some text, in any colour:
 ```
-battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd("yellow")c("yellow", "] ")git_branch("red")git_dirty("red")git?("white", " ± ")!git("white", " $ ")
+# current working directory
+cwd("colour")
+
+# current working directory shortened
+cwd_short("colour")
+
+# current git branch
+git_branch("colour")
+
+# last command exit code
+last_exit_code("colour")
+```
+
+Other methods:
+
+```
+# write out any text you want
+c("colour", "text")
+
+# write out the battery percentage, with different colours for different states
+battery_percentage("low-battery-colour", "medium-battery-colour", "high-battery-colour")
 ```
