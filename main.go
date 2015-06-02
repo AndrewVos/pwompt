@@ -5,10 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strconv"
 	"strings"
 	"syscall"
-
-	"github.com/AndrewVos/colour"
 )
 
 func main() {
@@ -42,10 +41,10 @@ func gitTip() string {
 
 	branch = " " + branch
 	if isGitRepositoryDirty() {
-		branch = colour.Red(branch + gitMarkDirty)
+		branch = Red(branch + gitMarkDirty)
 	} else {
 	}
-	branch = colour.Green(branch) + colour.White(gitMark)
+	branch = Green(branch) + White(gitMark)
 
 	return branch
 }
@@ -83,6 +82,20 @@ func workingDirectory() string {
 		}
 	}
 
-	wd = colour.Yellow("[" + wd + "]")
+	wd = Yellow("[" + wd + "]")
 	return wd
+}
+
+func Black(text string) string   { return colour(text, 0) }
+func Red(text string) string     { return colour(text, 1) }
+func Green(text string) string   { return colour(text, 2) }
+func Yellow(text string) string  { return colour(text, 3) }
+func Blue(text string) string    { return colour(text, 4) }
+func Magenta(text string) string { return colour(text, 5) }
+func Cyan(text string) string    { return colour(text, 6) }
+func White(text string) string   { return colour(text, 7) }
+func Default(text string) string { return colour(text, 9) }
+
+func colour(text string, colour int) string {
+	return "\001\x1b[3" + strconv.Itoa(colour) + ";1m\002" + text + "\001\x1b[0m\002"
 }
