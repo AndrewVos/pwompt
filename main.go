@@ -112,15 +112,17 @@ func main() {
 		if methodName == "c" {
 			fmt.Print(Colourise(arguments[0], arguments[1]))
 		} else if methodName == "battery_percentage" {
-			percentage := battery.Percentage()
-			percentageDisplay := fmt.Sprintf("%v", percentage) + "%"
+			if battery.Exists() {
+				percentage := battery.Percentage()
+				percentageDisplay := fmt.Sprintf("%v", percentage) + "%"
 
-			if percentage < 10 {
-				fmt.Print(Colourise(arguments[0], percentageDisplay))
-			} else if percentage < 70 {
-				fmt.Print(Colourise(arguments[1], percentageDisplay))
-			} else {
-				fmt.Print(Colourise(arguments[2], percentageDisplay))
+				if percentage < 10 {
+					fmt.Print(Colourise(arguments[0], percentageDisplay))
+				} else if percentage < 70 {
+					fmt.Print(Colourise(arguments[1], percentageDisplay))
+				} else {
+					fmt.Print(Colourise(arguments[2], percentageDisplay))
+				}
 			}
 		}
 	}
