@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 var shortenPath = true
@@ -116,17 +115,15 @@ func isGitRepository() bool {
 }
 
 func isGitRepositoryDirty() bool {
-	cmd := exec.Command("git", "diff-files", "--quiet")
-
-	if err := cmd.Run(); err != nil {
-		if exiterr, ok := err.(*exec.ExitError); ok {
-			if _, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-				return true
-			}
-			return false
-		} else {
-			return true
-		}
+	cmd := exec.Command("git", "status", "--porcelain")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	lines := strings.Split(string(output), "\n")
+	if len(lines) > 1 {
+		return true
 	}
 
 	return false
