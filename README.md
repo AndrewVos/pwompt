@@ -6,5 +6,5 @@ A PS1 written in go
 
 ```
 go get github.com/AndrewVos/pwompt
-echo PS1=\'$\(LAST_EXIT_CODE=\$? pwompt\)\' >> ~/.bashrc
+echo PS1=\'$\(PWOMPT_LAST_EXIT_CODE=\$? pwompt\)\' >> ~/.bashrc
 ```
