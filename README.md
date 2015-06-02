@@ -2,6 +2,8 @@
 
 A PS1 written in go
 
+![screenshot](https://github.com/AndrewVos/pwompt/raw/master/screenshot.png)
+
 ## Installation
 
 ```
@@ -9,7 +11,7 @@ go get github.com/AndrewVos/pwompt
 echo PS1=\'$\(PWOMPT_LAST_EXIT_CODE=\$? pwompt\)\' >> ~/.bashrc
 ```
 
-## Examples
+## Arguments
 
 ```
 PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt)' >> ~/.bashrc
