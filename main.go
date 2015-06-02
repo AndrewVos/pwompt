@@ -27,7 +27,11 @@ func main() {
 
 	fmt.Print(battery())
 	fmt.Print(workingDirectory())
-	fmt.Print(tip())
+	if isGitRepository() {
+		fmt.Print(gitTip())
+	} else {
+		fmt.Print(tip())
+	}
 }
 
 var batteryChargingMark = "⏚"
@@ -67,16 +71,10 @@ func battery() string {
 }
 
 func tip() string {
-	tip := " $ "
-	if isGitRepository() {
-		tip = gitTip()
+	if lastExitCode() > 0 {
+		return " " + Red(fmt.Sprintf("%v", lastExitCode())) + " $ "
 	}
-	return tip
-}
-
-func isGitRepository() bool {
-	_, err := os.Stat(".git/config")
-	return err == nil
+	return " $ "
 }
 
 var gitMark = " ± "
@@ -93,11 +91,24 @@ func gitTip() string {
 	branch = " " + branch
 	if isGitRepositoryDirty() {
 		branch = Red(branch + gitMarkDirty)
-	} else {
+	}
+	if lastExitCode() > 0 {
+		branch = branch + Red(fmt.Sprintf(" %v", lastExitCode()))
 	}
 	branch = Green(branch) + White(gitMark)
 
 	return branch
+}
+
+func lastExitCode() int {
+	lastExitCode := os.Getenv("LAST_EXIT_CODE")
+	code, _ := strconv.ParseInt(lastExitCode, 0, 64)
+	return int(code)
+}
+
+func isGitRepository() bool {
+	_, err := os.Stat(".git/config")
+	return err == nil
 }
 
 func isGitRepositoryDirty() bool {
