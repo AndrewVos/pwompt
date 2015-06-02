@@ -38,6 +38,10 @@ var batteryChargingMark = "⏚"
 var batteryDischargingMark = "⌁"
 
 func battery() string {
+	if !showBattery {
+		return ""
+	}
+
 	output, err := exec.Command("acpi", "--battery").Output()
 	if err != nil {
 		log.Println(err)
