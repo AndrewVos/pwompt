@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -18,8 +17,11 @@ func gitBranch() string {
 }
 
 func isGitRepository() bool {
-	_, err := os.Stat(".git/config")
-	return err == nil
+	_, err := exec.Command("git", "rev-parse", "--git-dir").Output()
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func isGitRepositoryDirty() bool {
