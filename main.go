@@ -1,16 +1,26 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
 )
 
+var shortenPath = true
+
+func init() {
+	flag.BoolVar(&shortenPath, "shorten-path", shortenPath, "shorten the path from \"/some/path/name\" to \"/some/.../name\"")
+}
+
 func main() {
+	flag.Parse()
+
 	fmt.Print(workingDirectory())
 	fmt.Print(tip())
 }
@@ -79,6 +89,12 @@ func workingDirectory() string {
 		} else if strings.HasPrefix(wd, usr.HomeDir) {
 			wd = strings.TrimPrefix(wd, usr.HomeDir)
 			wd = "~" + wd
+		}
+	}
+	if shortenPath {
+		parts := strings.Split(wd, "/")
+		if len(parts) > 2 {
+			wd = path.Join(parts[0], "...", parts[len(parts)-1])
 		}
 	}
 
