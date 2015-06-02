@@ -3,26 +3,67 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
 )
 
 var shortenPath = true
+var showBattery = true
 
 func init() {
 	flag.BoolVar(&shortenPath, "shorten-path", shortenPath, "shorten the path from \"/some/path/name\" to \"/some/.../name\"")
+	flag.BoolVar(&showBattery, "show-battery", showBattery, "show the battery percentage")
 }
 
 func main() {
 	flag.Parse()
 
+	fmt.Print(battery())
 	fmt.Print(workingDirectory())
 	fmt.Print(tip())
+}
+
+var batteryChargingMark = "⏚"
+var batteryDischargingMark = "⌁"
+
+func battery() string {
+	output, err := exec.Command("acpi", "--battery").Output()
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	battery := string(output)
+
+	percentageRegex := regexp.MustCompile("(\\d+)%")
+	matches := percentageRegex.FindStringSubmatch(battery)
+	percentage, err := strconv.ParseInt(matches[1], 0, 64)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	p := fmt.Sprintf("%v", percentage) + "%"
+	if percentage < 10 {
+		p = Red(p)
+	} else if percentage < 70 {
+		p = Yellow(p)
+	} else {
+		p = Green(p)
+	}
+
+	if strings.Contains(battery, "Charging") {
+		p = batteryChargingMark + p
+	} else if strings.Contains(battery, "Discharging") {
+		p = batteryDischargingMark + p
+	}
+	return p + " "
 }
 
 func tip() string {
