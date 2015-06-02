@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultPwomptConfig = `battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")`
+	DefaultPwomptConfig = `battery_charging?("white", "⏚")battery_discharging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")cwd_short("blue")c("yellow", "] ")git_branch("red")git_dirty?("red", "* ")not_git_dirty?("white", " ")last_exit_code("magenta")last_exit_failed?("white", " ")git?("white", "±")not_git?("white", "$")c("white", " ")`
 )
 
 func main() {
@@ -65,6 +65,10 @@ func main() {
 			}
 		} else if method == "git_dirty?" {
 			if isGitRepository() && isGitRepositoryDirty() {
+				fmt.Print(colour(arguments[0], arguments[1]))
+			}
+		} else if method == "not_git_dirty?" {
+			if isGitRepository() && !isGitRepositoryDirty() {
 				fmt.Print(colour(arguments[0], arguments[1]))
 			}
 		} else if method == "git?" {
