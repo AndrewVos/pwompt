@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -71,6 +72,11 @@ func main() {
 		}},
 	}
 
+	print := func(text string) {
+		text = strings.Replace(text, "\\n", "\n", -1)
+		fmt.Print(text)
+	}
+
 	execute := func(methodName string, arguments []string) bool {
 		for _, i := range ifs {
 			if methodName == i.IfName() || methodName == i.IfNotName() {
@@ -78,12 +84,12 @@ func main() {
 					result := i.Result()
 					if methodName == i.IfName() {
 						if result {
-							fmt.Print(Colourise(arguments[0], arguments[1]))
+							print(Colourise(arguments[0], arguments[1]))
 						}
 						return true
 					} else {
 						if !result {
-							fmt.Print(Colourise(arguments[0], arguments[1]))
+							print(Colourise(arguments[0], arguments[1]))
 						}
 						return true
 					}
@@ -92,7 +98,7 @@ func main() {
 		}
 		for _, m := range methods {
 			if methodName == m.Name {
-				fmt.Print(m.Result(arguments[0]))
+				print(m.Result(arguments[0]))
 				return true
 			}
 		}
@@ -113,18 +119,18 @@ func main() {
 		}
 
 		if methodName == "c" {
-			fmt.Print(Colourise(arguments[0], arguments[1]))
+			print(Colourise(arguments[0], arguments[1]))
 		} else if methodName == "battery_percentage" {
 			if battery.Exists() {
 				percentage := battery.Percentage()
 				percentageDisplay := fmt.Sprintf("%v", percentage) + "%"
 
 				if percentage < 10 {
-					fmt.Print(Colourise(arguments[0], percentageDisplay))
+					print(Colourise(arguments[0], percentageDisplay))
 				} else if percentage < 70 {
-					fmt.Print(Colourise(arguments[1], percentageDisplay))
+					print(Colourise(arguments[1], percentageDisplay))
 				} else {
-					fmt.Print(Colourise(arguments[2], percentageDisplay))
+					print(Colourise(arguments[2], percentageDisplay))
 				}
 			}
 		}
