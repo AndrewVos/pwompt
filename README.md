@@ -16,6 +16,32 @@ export PWOMPT_CONFIG='battery_charging?("white", "⏚")not_battery_charging?("wh
 PS1='$(PWOMPT_LAST_EXIT_CODE=$? pwompt)'
 ```
 
+## Examples
+
+Battery, username, working directory, git, exit code:
+
+```
+export PWOMPT_CONFIG='battery_charging?("white", "⏚")not_battery_charging?("white", "⌁")battery_percentage("red", "yellow", "green")battery?("white", " ")c("yellow", "[")user("magenta")c("white",":")cwd_short("blue")c("yellow", "]")git?("white", " ")git_branch("magenta")git_dirty?("red", "*")last_exit_failed?("white", " ")last_exit_code("red")git?("white", " ±")not_git?("white", " $")c("white", " ")'
+```
+
+Username, working directory, git, exit code:
+
+```
+export PWOMPT_CONFIG='c("yellow", "[")user("magenta")c("white",":")cwd_short("blue")c("yellow", "]")git?("white", " ")git_branch("magenta")git_dirty?("red", "*")last_exit_failed?("white", " ")last_exit_code("red")git?("white", " ±")not_git?("white", " $")c("white", " ")'
+```
+
+Username and working directory:
+
+```
+export PWOMPT_CONFIG='c("yellow", "[")user("magenta")c("white",":")cwd_short("blue")c("yellow", "]")c("white", " $ ")'
+```
+
+Working directory with prompt on new line:
+
+```
+export PWOMPT_CONFIG='c("yellow", "[")user("magenta")c("white",":")cwd("blue")c("yellow", "]")c("white", "\n$ ")'
+```
+
 ## Methods
 
 These methods, if they return true, write custom text out in a certain colour.
